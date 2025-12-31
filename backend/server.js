@@ -12,7 +12,13 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5500', 'http://127.0.0.1:5500', 'http://localhost:3000', 'http://localhost:5000', process.env.FRONTEND_URL],
+  origin: [
+    'http://localhost:5500',
+    'http://127.0.0.1:5500',
+    'http://localhost:3000',
+    'http://localhost:5000',
+    process.env.FRONTEND_URL
+  ],
   credentials: true
 }));
 app.use(express.json());
@@ -20,9 +26,6 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/admin', express.static(path.join(__dirname, 'admin-dashboard'), {
-  index: 'index.html'
-}));
 app.use('/images', express.static('C:/Users/tandr/Fresh-Hot-Bread/images'));
 
 // Import routes
@@ -39,7 +42,7 @@ try {
   console.log('⚠️ Payments route not found - skipping');
 }
 
-// Use routes
+// Use API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/images', imageRoutes);
@@ -62,28 +65,35 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Redirect /admin to /admin/index.html
+// -----------------------
+// Serve Admin Dashboard
+// -----------------------
+app.use('/admin', express.static(path.join(__dirname, 'admin-dashboard')));
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin-dashboard', 'index.html'));
 });
-
 app.get('/admin/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin-dashboard', 'dashboard.html'));
 });
-// Serve main site static files
-app.use(express.static(path.join(__dirname, 'site')));
 
-// Catch-all for main site
+// -----------------------
+// Serve Main Site
+// -----------------------
+app.use(express.static(path.join(__dirname, 'site')));
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'site', 'index.html'));
 });
 
-// 404 handler
+// -----------------------
+// 404 Handler
+// -----------------------
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Error handler
+// -----------------------
+// Error Handler
+// -----------------------
 app.use((err, req, res, next) => {
   console.error('Error:', err);
   res.status(err.status || 500).json({
@@ -91,7 +101,9 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Initialize database and start server
+// -----------------------
+// Initialize Database & Start Server
+// -----------------------
 const PORT = process.env.PORT || 5000;
 
 initializeDatabase()
