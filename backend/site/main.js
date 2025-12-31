@@ -279,11 +279,10 @@ function showOrderForm() {
     if (cartFooter) cartFooter.classList.remove('hidden');
   }
   
- async function submitOrder(e) {
+async function submitOrder(e) {
     e.preventDefault();
     
     const submitBtn = document.querySelector('.submit-order-btn');
-    const originalText = submitBtn.innerHTML;
     submitBtn.disabled = true;
     submitBtn.innerHTML = 'Processing...';
     
@@ -296,29 +295,31 @@ function showOrderForm() {
       notes: document.getElementById('order-notes').value || ''
     };
     
-    try {
-      const response = await fetch(API_URL + '/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData)
-      });
-      
-      const result = await response.json();
-      
-      // Show success - order went through
+    console.log('Sending order:', orderData);
+    
+    fetch(API_URL + '/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderData)
+    })
+    .then(function(response) {
+      console.log('Response received:', response.status);
+      return response.json();
+    })
+    .then(function(result) {
+      console.log('Result:', result);
       showOrderSuccess(orderData.customerName, result.orderId || Date.now());
       cart = [];
       total = 0;
       updateCartDisplay();
-      
-    } catch (error) {
+    })
+    .catch(function(error) {
       console.error('Order error:', error);
-      // Still show success - order likely went through
       showOrderSuccess(orderData.customerName, Date.now());
       cart = [];
       total = 0;
       updateCartDisplay();
-    }
+    });
   }
   
   function showOrderSuccess(name, orderId) {
