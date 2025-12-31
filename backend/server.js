@@ -24,15 +24,15 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files
+// Serve static files - FIXED!
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/images', express.static('C:/Users/tandr/Fresh-Hot-Bread/images'));
+app.use('/images', express.static(path.join(__dirname, 'images')));
 
 // Import routes
 const authRoutes = require('./routes/auth');
 const contentRoutes = require('./routes/content');
 const imageRoutes = require('./routes/images');
-const orderRoutes = require('./routes/orders');  // NEW!
+const orderRoutes = require('./routes/orders');
 
 // Check if payments route exists
 let paymentRoutes;
@@ -46,7 +46,7 @@ try {
 app.use('/api/auth', authRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/images', imageRoutes);
-app.use('/api/orders', orderRoutes);  // NEW!
+app.use('/api/orders', orderRoutes);
 
 if (paymentRoutes) {
   app.use('/api/payments', paymentRoutes);
@@ -111,10 +111,11 @@ initializeDatabase()
     app.listen(PORT, () => {
       console.log('');
       console.log('🍞 ═══════════════════════════════════════');
-      console.log('   FRESH HOT BREAD API SERVER');
+      console.log('   FRESH HOT BREAD - FULL STACK');
       console.log('═══════════════════════════════════════');
-      console.log(`📡 API Running:     http://localhost:${PORT}`);
+      console.log(`🌐 Website:         http://localhost:${PORT}`);
       console.log(`📊 Admin Dashboard: http://localhost:${PORT}/admin`);
+      console.log(`📡 API:             http://localhost:${PORT}/api`);
       console.log(`🔧 Environment:     ${process.env.NODE_ENV || 'development'}`);
       console.log('═══════════════════════════════════════');
       console.log('');

@@ -1,7 +1,13 @@
 document.addEventListener("DOMContentLoaded", function() {
   
   // ========== API CONFIGURATION ==========
-  const API_URL = 'http://localhost:5000';
+  // Works both locally AND on Render!
+  let API_URL;
+  if (window.location.hostname === 'localhost') {
+    API_URL = 'http://localhost:5000';
+  } else {
+    API_URL = '';
+  }
   
   // ========== PAGE LOADER ==========
   const pageLoader = document.getElementById('page-loader');
@@ -72,13 +78,16 @@ document.addEventListener("DOMContentLoaded", function() {
   const toast = document.getElementById("toast");
 
   // ========== TOAST ==========
-  function showToast(message, isError = false) {
+  function showToast(message, isError) {
+    if (isError === undefined) isError = false;
     if (toast) {
       const toastMessage = toast.querySelector('.toast-message');
       if (toastMessage) toastMessage.textContent = message;
       toast.style.background = isError ? '#DC2626' : '#2F855A';
       toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 3000);
+      setTimeout(function() {
+        toast.classList.remove('show');
+      }, 3000);
     }
   }
 
@@ -92,7 +101,7 @@ document.addEventListener("DOMContentLoaded", function() {
     cart.forEach(function(item) {
       const li = document.createElement('li');
       li.classList.add("cart-item");
-      li.innerHTML = `<span>${item.quantityText}</span><button class="remove-btn" data-id="${item.id}">×</button>`;
+      li.innerHTML = '<span>' + item.quantityText + '</span><button class="remove-btn" data-id="' + item.id + '">×</button>';
       if (cartItems) cartItems.appendChild(li);
     });
 
@@ -123,7 +132,7 @@ document.addEventListener("DOMContentLoaded", function() {
       const quantityText = quantitySelect.options[quantitySelect.selectedIndex].text;
       const price = parseFloat(quantitySelect.value);
 
-      cart.push({ id: Date.now(), quantityText, price });
+      cart.push({ id: Date.now(), quantityText: quantityText, price: price });
       total += price;
       updateCartDisplay();
 
@@ -148,12 +157,12 @@ document.addEventListener("DOMContentLoaded", function() {
     cartItems.addEventListener("click", function(e) {
       if (e.target.classList.contains("remove-btn")) {
         const id = Number(e.target.dataset.id);
-        const item = cart.find(i => i.id === id);
+        const item = cart.find(function(i) { return i.id === id; });
         if (item) {
           e.target.parentElement.classList.add('removing');
           setTimeout(function() {
             total -= item.price;
-            cart = cart.filter(i => i.id !== id);
+            cart = cart.filter(function(i) { return i.id !== id; });
             updateCartDisplay();
           }, 300);
         }
@@ -169,7 +178,15 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
   // ========== CART TOGGLE ==========
-  if (cartToggle) cartToggle.addEventListener("click", () => miniCart?.classList.contains("show") ? closeCart() : openCart());
+  if (cartToggle) {
+    cartToggle.addEventListener("click", function() {
+      if (miniCart && miniCart.classList.contains("show")) {
+        closeCart();
+      } else {
+        openCart();
+      }
+    });
+  }
   if (cartClose) cartClose.addEventListener("click", closeCart);
   if (cartOverlay) cartOverlay.addEventListener("click", closeCart);
 
@@ -185,58 +202,54 @@ document.addEventListener("DOMContentLoaded", function() {
     const orderForm = document.createElement('div');
     orderForm.id = 'order-form';
     orderForm.className = 'order-form';
-    orderForm.innerHTML = `
-      <div class="order-form-header">
-        <button type="button" class="back-btn" id="back-to-cart">← Back</button>
-        <h4>Your Information</h4>
-      </div>
-      <form id="checkout-form">
-        <div class="form-group">
-          <label for="order-customer-name">Name *</label>
-          <input type="text" id="order-customer-name" required placeholder="Your full name">
-        </div>
-        <div class="form-group">
-          <label for="order-customer-phone">Phone *</label>
-          <input type="tel" id="order-customer-phone" required placeholder="(209) 555-1234">
-        </div>
-        <div class="form-group">
-          <label for="order-customer-email">Email (optional)</label>
-          <input type="email" id="order-customer-email" placeholder="your@email.com">
-        </div>
-        <div class="form-group">
-          <label for="order-notes">Special Notes</label>
-          <textarea id="order-notes" rows="2" placeholder="Pickup time, special requests..."></textarea>
-        </div>
-        <button type="submit" class="submit-order-btn">
-          Place Order - $<span id="form-total">0.00</span>
-        </button>
-      </form>
-    `;
+    orderForm.innerHTML = '<div class="order-form-header">' +
+      '<button type="button" class="back-btn" id="back-to-cart">← Back</button>' +
+      '<h4>Your Information</h4>' +
+      '</div>' +
+      '<form id="checkout-form">' +
+      '<div class="form-group">' +
+      '<label for="order-customer-name">Name *</label>' +
+      '<input type="text" id="order-customer-name" required placeholder="Your full name">' +
+      '</div>' +
+      '<div class="form-group">' +
+      '<label for="order-customer-phone">Phone *</label>' +
+      '<input type="tel" id="order-customer-phone" required placeholder="(209) 555-1234">' +
+      '</div>' +
+      '<div class="form-group">' +
+      '<label for="order-customer-email">Email (optional)</label>' +
+      '<input type="email" id="order-customer-email" placeholder="your@email.com">' +
+      '</div>' +
+      '<div class="form-group">' +
+      '<label for="order-notes">Special Notes</label>' +
+      '<textarea id="order-notes" rows="2" placeholder="Pickup time, special requests..."></textarea>' +
+      '</div>' +
+      '<button type="submit" class="submit-order-btn">' +
+      'Place Order - $<span id="form-total">0.00</span>' +
+      '</button>' +
+      '</form>';
     
     cartFooter.parentNode.insertBefore(orderForm, cartFooter.nextSibling);
     
     // Styles
     const style = document.createElement('style');
-    style.textContent = `
-      .order-form { display: none; padding: 24px; background: var(--warm-white, #FFFEF9); border-top: 1px solid rgba(0,0,0,0.08); }
-      .order-form.show { display: block; }
-      .order-form-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
-      .order-form-header h4 { font-size: 1.25rem; color: #960909; margin: 0; font-family: 'Playfair Display', serif; }
-      .order-form .back-btn { background: none; border: none; color: #666; cursor: pointer; font-size: 14px; padding: 8px 0; }
-      .order-form .back-btn:hover { color: #960909; }
-      .order-form .form-group { margin-bottom: 16px; }
-      .order-form label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px; color: #2C2C2C; }
-      .order-form input, .order-form textarea { width: 100%; padding: 12px 16px; border: 2px solid rgba(0,0,0,0.1); border-radius: 12px; font-size: 15px; font-family: inherit; transition: 0.2s; box-sizing: border-box; }
-      .order-form input:focus, .order-form textarea:focus { outline: none; border-color: #960909; }
-      .submit-order-btn { width: 100%; padding: 16px 24px; background: #960909; color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
-      .submit-order-btn:hover { background: #6B0707; }
-      .submit-order-btn:disabled { opacity: 0.7; cursor: not-allowed; }
-      .cart-footer.hidden { display: none; }
-      .order-success { text-align: center; padding: 40px 24px; }
-      .order-success .success-icon { font-size: 64px; margin-bottom: 16px; }
-      .order-success h3 { color: #960909; margin-bottom: 12px; font-family: 'Playfair Display', serif; }
-      .order-success p { color: #666; margin-bottom: 8px; }
-    `;
+    style.textContent = '.order-form { display: none; padding: 24px; background: var(--warm-white, #FFFEF9); border-top: 1px solid rgba(0,0,0,0.08); }' +
+      '.order-form.show { display: block; }' +
+      '.order-form-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }' +
+      '.order-form-header h4 { font-size: 1.25rem; color: #960909; margin: 0; font-family: "Playfair Display", serif; }' +
+      '.order-form .back-btn { background: none; border: none; color: #666; cursor: pointer; font-size: 14px; padding: 8px 0; }' +
+      '.order-form .back-btn:hover { color: #960909; }' +
+      '.order-form .form-group { margin-bottom: 16px; }' +
+      '.order-form label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px; color: #2C2C2C; }' +
+      '.order-form input, .order-form textarea { width: 100%; padding: 12px 16px; border: 2px solid rgba(0,0,0,0.1); border-radius: 12px; font-size: 15px; font-family: inherit; transition: 0.2s; box-sizing: border-box; }' +
+      '.order-form input:focus, .order-form textarea:focus { outline: none; border-color: #960909; }' +
+      '.submit-order-btn { width: 100%; padding: 16px 24px; background: #960909; color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: 0.2s; }' +
+      '.submit-order-btn:hover { background: #6B0707; }' +
+      '.submit-order-btn:disabled { opacity: 0.7; cursor: not-allowed; }' +
+      '.cart-footer.hidden { display: none; }' +
+      '.order-success { text-align: center; padding: 40px 24px; }' +
+      '.order-success .success-icon { font-size: 64px; margin-bottom: 16px; }' +
+      '.order-success h3 { color: #960909; margin-bottom: 12px; font-family: "Playfair Display", serif; }' +
+      '.order-success p { color: #666; margin-bottom: 8px; }';
     document.head.appendChild(style);
     
     document.getElementById('back-to-cart').addEventListener('click', hideOrderForm);
@@ -276,13 +289,13 @@ document.addEventListener("DOMContentLoaded", function() {
       customerName: document.getElementById('order-customer-name').value,
       customerPhone: document.getElementById('order-customer-phone').value,
       customerEmail: document.getElementById('order-customer-email').value || '',
-      items: cart.map(item => item.quantityText).join(', '),
+      items: cart.map(function(item) { return item.quantityText; }).join(', '),
       total: total,
       notes: document.getElementById('order-notes').value || ''
     };
     
     try {
-      const response = await fetch(`${API_URL}/api/orders`, {
+      const response = await fetch(API_URL + '/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderData)
@@ -312,17 +325,15 @@ document.addEventListener("DOMContentLoaded", function() {
   function showOrderSuccess(name, orderId) {
     const orderForm = document.getElementById('order-form');
     if (orderForm) {
-      orderForm.innerHTML = `
-        <div class="order-success">
-          <div class="success-icon">✓</div>
-          <h3>Thank You, ${name}!</h3>
-          <p>Your order #${orderId} has been received.</p>
-          <p>We'll call you shortly to confirm pickup.</p>
-          <button onclick="location.reload()" class="submit-order-btn" style="margin-top: 20px;">
-            Continue Shopping
-          </button>
-        </div>
-      `;
+      orderForm.innerHTML = '<div class="order-success">' +
+        '<div class="success-icon">✓</div>' +
+        '<h3>Thank You, ' + name + '!</h3>' +
+        '<p>Your order #' + orderId + ' has been received.</p>' +
+        '<p>We\'ll call you shortly to confirm pickup.</p>' +
+        '<button onclick="location.reload()" class="submit-order-btn" style="margin-top: 20px;">' +
+        'Continue Shopping' +
+        '</button>' +
+        '</div>';
     }
   }
   
@@ -335,7 +346,7 @@ document.addEventListener("DOMContentLoaded", function() {
   updateCartDisplay();
 
   // ========== SMOOTH SCROLLING ==========
-  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+  document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
     anchor.addEventListener('click', function(e) {
       e.preventDefault();
       const target = document.querySelector(this.getAttribute('href'));
@@ -350,8 +361,8 @@ document.addEventListener("DOMContentLoaded", function() {
   });
 
   // ========== FADE IN ANIMATIONS ==========
-  const fadeObserver = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
+  const fadeObserver = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
       if (entry.isIntersecting) {
         entry.target.classList.add('visible');
         fadeObserver.unobserve(entry.target);
@@ -359,13 +370,15 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
 
-  document.querySelectorAll('.fade-in').forEach(el => fadeObserver.observe(el));
+  document.querySelectorAll('.fade-in').forEach(function(el) {
+    fadeObserver.observe(el);
+  });
 
   // ========== FAQ ACCORDION ==========
-  document.querySelectorAll('.faq-item').forEach(detail => {
+  document.querySelectorAll('.faq-item').forEach(function(detail) {
     detail.addEventListener('toggle', function() {
       if (this.open) {
-        document.querySelectorAll('.faq-item').forEach(other => {
+        document.querySelectorAll('.faq-item').forEach(function(other) {
           if (other !== detail && other.open) other.open = false;
         });
       }
@@ -373,26 +386,28 @@ document.addEventListener("DOMContentLoaded", function() {
   });
 
   // ========== GALLERY ==========
-  document.querySelectorAll('.gallery-item').forEach(item => {
-    item.addEventListener('click', function() { this.classList.toggle('expanded'); });
+  document.querySelectorAll('.gallery-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+      this.classList.toggle('expanded');
+    });
   });
 
   // ========== KEYBOARD ==========
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
       closeCart();
-      hamburger?.classList.remove("active");
-      navLinks?.classList.remove("active");
+      if (hamburger) hamburger.classList.remove("active");
+      if (navLinks) navLinks.classList.remove("active");
     }
   });
 
   // ========== SPECIAL OFFER TOGGLE ==========
   async function loadSpecialOfferVisibility() {
     try {
-      const response = await fetch(`${API_URL}/api/content/special_enabled`);
+      const response = await fetch(API_URL + '/api/content/special_enabled');
       const data = await response.json();
       
-      const specialBadge = document.getElementById('special-badge');
+      const specialBadge = document.querySelector('.special-badge');
       if (specialBadge) {
         if (data.value === 'false' || data.value === false) {
           specialBadge.classList.add('hidden');
@@ -401,12 +416,10 @@ document.addEventListener("DOMContentLoaded", function() {
         }
       }
     } catch (error) {
-      // If can't fetch, show the badge by default
       console.log('Could not load special offer setting, showing by default');
     }
   }
   
-  // Load special offer visibility
   loadSpecialOfferVisibility();
 
 });
