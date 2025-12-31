@@ -258,7 +258,7 @@ document.addEventListener("DOMContentLoaded", function() {
     orderFormCreated = true;
   }
   
-  function showOrderForm() {
+function showOrderForm() {
     createOrderForm();
     const orderForm = document.getElementById('order-form');
     const cartFooter = document.querySelector('.cart-footer');
@@ -266,10 +266,12 @@ document.addEventListener("DOMContentLoaded", function() {
     if (orderForm && cartFooter) {
       cartFooter.classList.add('hidden');
       orderForm.classList.add('show');
-      document.getElementById('form-total').textContent = total.toFixed(2);
+      const formTotal = document.getElementById('form-total');
+      if (formTotal) {
+        formTotal.textContent = total.toFixed(2);
+      }
     }
   }
-  
   function hideOrderForm() {
     const orderForm = document.getElementById('order-form');
     const cartFooter = document.querySelector('.cart-footer');
