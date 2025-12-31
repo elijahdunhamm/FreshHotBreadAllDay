@@ -70,6 +70,13 @@ app.get('/admin', (req, res) => {
 app.get('/admin/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin-dashboard', 'dashboard.html'));
 });
+// Serve main site static files
+app.use(express.static(path.join(__dirname, 'site')));
+
+// Catch-all for main site
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'site', 'index.html'));
+});
 
 // 404 handler
 app.use((req, res) => {
