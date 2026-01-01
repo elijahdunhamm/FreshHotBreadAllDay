@@ -2290,3 +2290,136 @@ h1, h2, h3, h4 {
     font-size: 0.95rem;
   }
 }
+/* === PHOTOGRAPHY SECTION === */
+.photography-section {
+  padding: 100px 0;
+  background: var(--warm-white);
+}
+
+.photography-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: center;
+  background: var(--cream);
+  border-radius: var(--radius-xl);
+  padding: 40px;
+  border: 1px solid rgba(150, 9, 9, 0.1);
+  box-shadow: var(--shadow-medium);
+  max-width: 950px;
+  margin: 0 auto;
+}
+
+.photography-image {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-strong);
+  border: 3px solid white;
+}
+
+.photography-image img {
+  width: 100%;
+  height: auto;
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+.photography-card:hover .photography-image img {
+  transform: scale(1.03);
+}
+
+.photography-info {
+  color: var(--charcoal);
+}
+
+.photography-info h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem;
+  color: var(--burgundy);
+  margin-bottom: 16px;
+}
+
+.photography-info > p {
+  color: var(--text-gray);
+  line-height: 1.8;
+  margin-bottom: 24px;
+}
+
+.photography-details {
+  list-style: none;
+  margin-bottom: 28px;
+}
+
+.photography-details li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  color: var(--charcoal);
+  font-size: 1rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.photography-details li:last-child {
+  border-bottom: none;
+}
+
+.photography-details li svg {
+  color: var(--burgundy);
+  flex-shrink: 0;
+}
+
+.photography-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 32px;
+  background: var(--burgundy);
+  color: white;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 1rem;
+  border-radius: 50px;
+  transition: var(--transition);
+  box-shadow: 0 8px 30px rgba(150, 9, 9, 0.3);
+}
+
+.photography-btn:hover {
+  background: var(--burgundy-dark);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(150, 9, 9, 0.4);
+}
+
+/* Photography responsive */
+@media (max-width: 900px) {
+  .photography-card {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    text-align: center;
+    padding: 32px;
+  }
+  
+  .photography-details {
+    display: inline-block;
+    text-align: left;
+  }
+  
+  .photography-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 600px) {
+  .photography-section {
+    padding: 70px 0;
+  }
+  
+  .photography-card {
+    padding: 24px;
+  }
+  
+  .photography-info h3 {
+    font-size: 1.5rem;
+  }
+}
