@@ -247,45 +247,86 @@ h1, h2, h3, h4 {
 }
 
 /* === MOBILE LOGO FIX === */
+/* ========================================
+   MOBILE LOGO TEXT - Add to your styles.css
+   Replace the existing MOBILE LOGO FIX section
+   ======================================== */
+
+/* === MOBILE LOGO - COLORFUL TEXT === */
+
+/* Hide the mobile text by default (shows on mobile only) */
+.logo-mobile-text {
+  display: none;
+}
+
+/* Mobile styles */
 @media (max-width: 900px) {
-  .logo-text {
-    display: flex !important;
-  }
-  
-  .logo-text span {
-    font-size: 0.7rem;
-  }
-  
-  .logo-text strong {
-    font-size: 1rem;
-  }
-  
+  /* Hide logo image on mobile */
   .logo img {
-    width: 40px;
-    height: 40px;
+    display: none !important;
+  }
+  
+  /* Hide the old logo text */
+  .logo-text {
+    display: none !important;
+  }
+  
+  /* Show colorful mobile text */
+  .logo-mobile-text {
+    display: flex !important;
+    flex-direction: column;
+    line-height: 1.1;
+    text-decoration: none;
+  }
+  
+  .logo-mobile-text .line1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+  
+  .logo-mobile-text .line1 .fresh {
+    color: #D4A84B; /* Tan/Gold */
+  }
+  
+  .logo-mobile-text .line1 .hot {
+    color: #960909; /* Maroon */
+  }
+  
+  .logo-mobile-text .line2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+  
+  .logo-mobile-text .line2 .bread {
+    color: #960909; /* Maroon */
+  }
+  
+  .logo-mobile-text .line2 .all-day {
+    color: #4A6FA5; /* Blue */
+  }
+  
+  .logo {
+    gap: 0;
   }
 }
 
 @media (max-width: 600px) {
-  .logo-text {
-    display: flex !important;
+  .logo-mobile-text .line1,
+  .logo-mobile-text .line2 {
+    font-size: 0.95rem;
   }
   
-  .logo-text span {
-    font-size: 0.65rem;
+  .navbar {
+    padding: 0 16px;
   }
-  
-  .logo-text strong {
-    font-size: 0.9rem;
-  }
-  
-  .logo img {
-    width: 36px;
-    height: 36px;
-  }
-  
-  .logo {
-    gap: 8px;
+}
+
+@media (max-width: 380px) {
+  .logo-mobile-text .line1,
+  .logo-mobile-text .line2 {
+    font-size: 0.85rem;
   }
 }
 
