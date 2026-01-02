@@ -258,7 +258,7 @@ document.addEventListener("DOMContentLoaded", function() {
     orderFormCreated = true;
   }
   
-function showOrderForm() {
+  function showOrderForm() {
     createOrderForm();
     const orderForm = document.getElementById('order-form');
     const cartFooter = document.querySelector('.cart-footer');
@@ -272,6 +272,7 @@ function showOrderForm() {
       }
     }
   }
+
   function hideOrderForm() {
     const orderForm = document.getElementById('order-form');
     const cartFooter = document.querySelector('.cart-footer');
@@ -279,7 +280,7 @@ function showOrderForm() {
     if (cartFooter) cartFooter.classList.remove('hidden');
   }
   
-async function submitOrder(e) {
+  async function submitOrder(e) {
     e.preventDefault();
     
     const submitBtn = document.querySelector('.submit-order-btn');
@@ -421,5 +422,42 @@ async function submitOrder(e) {
   }
   
   loadSpecialOfferVisibility();
+
+  // ========== LOAD DYNAMIC IMAGES FROM DATABASE ==========
+  async function loadDynamicImages() {
+    const imageMap = {
+      'hero': '.hero-image-wrapper img',
+      'logo': '.logo img, .footer-logo',
+      'product': '.product-image img',
+      'coffee': '.coffee-image-wrapper img',
+      'feature1': '.feature-card:nth-child(1) .feature-image img',
+      'feature2': '.feature-card:nth-child(2) .feature-image img',
+      'feature3': '.feature-card:nth-child(3) .feature-image img',
+      'gallery1': '.gallery-item:nth-child(1) img',
+      'gallery2': '.gallery-item:nth-child(2) img',
+      'gallery3': '.gallery-item:nth-child(3) img',
+      'gallery4': '.gallery-item:nth-child(4) img'
+    };
+
+    for (const key in imageMap) {
+      try {
+        const response = await fetch(API_URL + '/api/images/' + key);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.url) {
+            const elements = document.querySelectorAll(imageMap[key]);
+            elements.forEach(function(el) {
+              el.src = data.url;
+            });
+          }
+        }
+      } catch (error) {
+        // Use default image if fetch fails - silently continue
+      }
+    }
+  }
+
+  // Load dynamic images
+  loadDynamicImages();
 
 });
