@@ -247,87 +247,111 @@ h1, h2, h3, h4 {
 }
 
 /* ========================================
-   MOBILE LOGO TEXT - FULL WIDTH
-   Add to your styles.css
-   Replace the existing MOBILE LOGO FIX section
+   MOBILE LOGO TEXT - TRUE FULL WIDTH CENTERED
+   Replaces all previous mobile logo fixes
    ======================================== */
 
-/* === MOBILE LOGO - COLORFUL TEXT FULL WIDTH === */
-
-/* Hide the mobile text by default (shows on mobile only) */
+/* Hide mobile logo text by default */
 .logo-mobile-text {
   display: none;
 }
 
-/* Mobile styles */
+/* =====================
+   MOBILE NAV FIX
+   ===================== */
 @media (max-width: 900px) {
-  /* Make navbar use space-between */
+
+  /* Navbar setup */
   .navbar {
+    position: relative;
     justify-content: space-between;
   }
-  
-  /* Hide logo image on mobile */
+
+   .nav-left {
+    position: relative;
+    z-index: 2;
+  }
+
+  .nav-right {
+    margin-left: auto;
+  }
+
+  /* Hide logo image */
   .logo img {
     display: none !important;
   }
-  
-  /* Hide the old logo text */
+
+  /* Hide desktop logo text */
   .logo-text {
     display: none !important;
   }
-  
-  /* Logo takes up available space */
+
+  /* Logo becomes full-width overlay */
   .logo {
-    flex: 1;
-    gap: 0;
+    position: absolute;
+    left: 0;
+    right: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    pointer-events: none; /* allows nav buttons to be clickable */
   }
-  
-  /* Show colorful mobile text - FULL WIDTH */
+
+  /* Show mobile logo text */
   .logo-mobile-text {
     display: flex !important;
     flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 100%;
     line-height: 1.15;
     text-decoration: none;
-    width: 100%;
   }
-  
+
+  /* Typography */
   .logo-mobile-text .line1,
   .logo-mobile-text .line2 {
     font-family: 'Playfair Display', serif;
-    font-size: 1.3rem;
+    font-size: clamp(1.3rem, 6vw, 2.5rem);
     font-weight: 700;
     letter-spacing: 0.5px;
   }
-  
+
+  /* Colors */
   .logo-mobile-text .line1 .fresh {
-    color: #D4A84B; /* Tan/Gold */
+    color: #D4A84B; /* Gold */
   }
-  
+
   .logo-mobile-text .line1 .hot {
     color: #960909; /* Maroon */
   }
-  
+
   .logo-mobile-text .line2 .bread {
     color: #960909; /* Maroon */
   }
-  
+
   .logo-mobile-text .line2 .all-day {
     color: #4A6FA5; /* Blue */
   }
-  
-  /* Keep nav-right minimal */
+
+  /* Keep nav-right clickable */
   .nav-right {
-    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
     gap: 8px;
   }
 }
 
+/* =====================
+   SMALLER SCREENS
+   ===================== */
 @media (max-width: 600px) {
   .logo-mobile-text .line1,
   .logo-mobile-text .line2 {
-    font-size: 1.15rem;
+    font-size: clamp(1.3rem, 6vw, 2.1rem);
+
   }
-  
+
   .navbar {
     padding: 0 16px;
     height: 65px;
@@ -339,11 +363,12 @@ h1, h2, h3, h4 {
   .logo-mobile-text .line2 {
     font-size: 1rem;
   }
-  
+
   .navbar {
     padding: 0 12px;
   }
 }
+
 
 /* === SPECIAL BADGE VISIBILITY === */
 .special-badge {
