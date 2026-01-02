@@ -1,166 +1,180 @@
 // ========================================
 // IMAGE UPLOAD ROUTES - routes/images.js
+// With Cloudinary Integration
 // ========================================
 
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const cloudinary = require('cloudinary').v2;
+const { getDb } = require('../models/initDb');
 
-// Import auth middleware - adjust path if needed
+// Import auth middleware
 let authenticateToken;
 try {
   const auth = require('../middleware/auth');
   authenticateToken = auth.authenticateToken || auth.verifyToken || auth;
 } catch (e) {
-  // Fallback: create simple auth check
   const jwt = require('jsonwebtoken');
   authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
-    
-    if (!token) {
-      return res.status(401).json({ error: 'No token provided' });
-    }
-    
+    if (!token) return res.status(401).json({ error: 'No token provided' });
     jwt.verify(token, process.env.JWT_SECRET || 'freshbread-secret-key', (err, user) => {
-      if (err) {
-        return res.status(403).json({ error: 'Invalid token' });
-      }
+      if (err) return res.status(403).json({ error: 'Invalid token' });
       req.user = user;
       next();
     });
   };
 }
 
-// Configure multer for image uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    // Save to uploads folder in backend
-    const uploadsDir = path.join(__dirname, '..', 'uploads');
-    
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-    
-    cb(null, uploadsDir);
-  },
-  filename: function (req, file, cb) {
-    // Generate unique filename
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    const key = req.body.key || 'image';
-    cb(null, key + '-' + uniqueSuffix + ext);
-  }
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// File filter - only allow images
+// Configure Multer for memory storage
+const storage = multer.memoryStorage();
+
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-  
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Only image files are allowed (JPEG, PNG, GIF, WebP)'), false);
+    cb(new Error('Only image files allowed'), false);
   }
 };
 
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
-  limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit
-  }
+  limits: { fileSize: 10 * 1024 * 1024 }
 });
 
-// POST /api/images/upload - Upload a new image
+// Helper: Upload to Cloudinary
+function uploadToCloudinary(buffer, options) {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(options, (error, result) => {
+      if (error) reject(error);
+      else resolve(result);
+    });
+    uploadStream.end(buffer);
+  });
+}
+
+// POST /api/images/upload
 router.post('/upload', authenticateToken, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ success: false, message: 'No image file provided' });
+      return res.status(400).json({ error: 'No image file provided' });
     }
 
-    const imageKey = req.body.key;
-    const targetPath = req.body.targetPath;
-    
-    // The uploaded file path
-    const uploadedFilename = req.file.filename;
-    let finalUrl = `/uploads/${uploadedFilename}`;
+    const { key } = req.body;
 
-    // Store the image path in database if we have access
-    try {
-      const db = require('../database/db');
-      if (db && imageKey) {
-        const stmt = db.prepare(`
-          INSERT OR REPLACE INTO content (key, value, updated_at)
-          VALUES (?, ?, datetime('now'))
-        `);
-        stmt.run(`image_${imageKey}`, finalUrl);
-      }
-    } catch (dbErr) {
-      console.log('Could not save to database:', dbErr.message);
+    if (!key) {
+      return res.status(400).json({ error: 'Image key is required' });
     }
 
-    console.log(`Image uploaded: ${uploadedFilename}`);
+    if (!process.env.CLOUDINARY_CLOUD_NAME) {
+      return res.status(500).json({ error: 'Cloudinary not configured' });
+    }
 
-    res.json({
-      success: true,
-      message: 'Image uploaded successfully',
-      url: finalUrl,
-      filename: uploadedFilename
+    console.log(`📸 Uploading image: ${key}`);
+
+    const result = await uploadToCloudinary(req.file.buffer, {
+      folder: 'freshhotbread',
+      public_id: `${key}-${Date.now()}`,
+      overwrite: true,
+      resource_type: 'image'
     });
 
+    console.log(`✅ Uploaded to Cloudinary: ${result.secure_url}`);
+
+    // Save URL to database
+    const db = getDb();
+    db.run(
+      `INSERT INTO site_content (key, value, updated_at) VALUES (?, ?, datetime('now'))
+       ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = datetime('now')`,
+      [`image_${key}`, result.secure_url, result.secure_url],
+      function(err) {
+        if (err) {
+          console.error('Database error:', err);
+          return res.status(500).json({ error: 'Failed to save image URL' });
+        }
+
+        res.json({
+          success: true,
+          url: result.secure_url,
+          message: 'Image uploaded successfully'
+        });
+      }
+    );
+
   } catch (error) {
-    console.error('Image upload error:', error);
-    res.status(500).json({ success: false, message: error.message || 'Upload failed' });
+    console.error('Upload error:', error);
+    res.status(500).json({ error: error.message || 'Failed to upload image' });
   }
 });
 
-// GET /api/images/list - List all uploaded images
-router.get('/list', authenticateToken, async (req, res) => {
-  try {
-    const uploadsDir = path.join(__dirname, '..', 'uploads');
-    
-    if (!fs.existsSync(uploadsDir)) {
-      return res.json({ images: [] });
-    }
+// GET /api/images/list
+router.get('/list', authenticateToken, (req, res) => {
+  const db = getDb();
+  
+  db.all(
+    `SELECT key, value FROM site_content WHERE key LIKE 'image_%'`,
+    [],
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
 
-    const files = fs.readdirSync(uploadsDir);
-    const images = files
-      .filter(file => /\.(jpg|jpeg|png|gif|webp)$/i.test(file))
-      .map(file => ({
-        filename: file,
-        url: `/uploads/${file}`
+      const images = (rows || []).map(row => ({
+        key: row.key.replace('image_', ''),
+        url: row.value
       }));
 
-    res.json({ images });
-
-  } catch (error) {
-    console.error('List images error:', error);
-    res.status(500).json({ error: 'Failed to list images' });
-  }
+      res.json({ images });
+    }
+  );
 });
 
-// DELETE /api/images/:filename - Delete an image
-router.delete('/:filename', authenticateToken, async (req, res) => {
-  try {
-    const filename = req.params.filename;
-    const filepath = path.join(__dirname, '..', 'uploads', filename);
+// GET /api/images/:key
+router.get('/:key', (req, res) => {
+  const db = getDb();
+  const { key } = req.params;
 
-    if (!fs.existsSync(filepath)) {
-      return res.status(404).json({ error: 'Image not found' });
+  db.get(
+    `SELECT value FROM site_content WHERE key = ?`,
+    [`image_${key}`],
+    (err, row) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      if (!row) {
+        return res.status(404).json({ error: 'Image not found' });
+      }
+      res.json({ url: row.value });
     }
+  );
+});
 
-    fs.unlinkSync(filepath);
+// DELETE /api/images/:key
+router.delete('/:key', authenticateToken, (req, res) => {
+  const { key } = req.params;
+  const db = getDb();
 
-    res.json({ success: true, message: 'Image deleted' });
-
-  } catch (error) {
-    console.error('Delete image error:', error);
-    res.status(500).json({ error: 'Failed to delete image' });
-  }
+  db.run(
+    `DELETE FROM site_content WHERE key = ?`,
+    [`image_${key}`],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Failed to delete image' });
+      }
+      res.json({ success: true, message: 'Image deleted' });
+    }
+  );
 });
 
 module.exports = router;
