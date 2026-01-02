@@ -246,13 +246,13 @@ h1, h2, h3, h4 {
   transform: rotate(-45deg) translate(5px, -5px);
 }
 
-/* === MOBILE LOGO FIX === */
 /* ========================================
-   MOBILE LOGO TEXT - Add to your styles.css
+   MOBILE LOGO TEXT - FULL WIDTH
+   Add to your styles.css
    Replace the existing MOBILE LOGO FIX section
    ======================================== */
 
-/* === MOBILE LOGO - COLORFUL TEXT === */
+/* === MOBILE LOGO - COLORFUL TEXT FULL WIDTH === */
 
 /* Hide the mobile text by default (shows on mobile only) */
 .logo-mobile-text {
@@ -261,6 +261,11 @@ h1, h2, h3, h4 {
 
 /* Mobile styles */
 @media (max-width: 900px) {
+  /* Make navbar use space-between */
+  .navbar {
+    justify-content: space-between;
+  }
+  
   /* Hide logo image on mobile */
   .logo img {
     display: none !important;
@@ -271,18 +276,27 @@ h1, h2, h3, h4 {
     display: none !important;
   }
   
-  /* Show colorful mobile text */
+  /* Logo takes up available space */
+  .logo {
+    flex: 1;
+    gap: 0;
+  }
+  
+  /* Show colorful mobile text - FULL WIDTH */
   .logo-mobile-text {
     display: flex !important;
     flex-direction: column;
-    line-height: 1.1;
+    line-height: 1.15;
     text-decoration: none;
+    width: 100%;
   }
   
-  .logo-mobile-text .line1 {
+  .logo-mobile-text .line1,
+  .logo-mobile-text .line2 {
     font-family: 'Playfair Display', serif;
-    font-size: 1.1rem;
+    font-size: 1.3rem;
     font-weight: 700;
+    letter-spacing: 0.5px;
   }
   
   .logo-mobile-text .line1 .fresh {
@@ -293,12 +307,6 @@ h1, h2, h3, h4 {
     color: #960909; /* Maroon */
   }
   
-  .logo-mobile-text .line2 {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.1rem;
-    font-weight: 700;
-  }
-  
   .logo-mobile-text .line2 .bread {
     color: #960909; /* Maroon */
   }
@@ -307,26 +315,33 @@ h1, h2, h3, h4 {
     color: #4A6FA5; /* Blue */
   }
   
-  .logo {
-    gap: 0;
+  /* Keep nav-right minimal */
+  .nav-right {
+    flex-shrink: 0;
+    gap: 8px;
   }
 }
 
 @media (max-width: 600px) {
   .logo-mobile-text .line1,
   .logo-mobile-text .line2 {
-    font-size: 0.95rem;
+    font-size: 1.15rem;
   }
   
   .navbar {
     padding: 0 16px;
+    height: 65px;
   }
 }
 
 @media (max-width: 380px) {
   .logo-mobile-text .line1,
   .logo-mobile-text .line2 {
-    font-size: 0.85rem;
+    font-size: 1rem;
+  }
+  
+  .navbar {
+    padding: 0 12px;
   }
 }
 
