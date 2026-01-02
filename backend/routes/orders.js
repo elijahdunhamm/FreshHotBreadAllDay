@@ -54,34 +54,32 @@ function getPacificDateString() {
 router.post('/', async (req, res) => {
   try {
     const { customerName, customerPhone, customerEmail, items, total, notes } = req.body;
-    
+
     // Validate required fields
     if (!customerName || !customerPhone || !items || !total) {
       return res.status(400).json({ 
         error: 'Missing required fields: name, phone, items, and total are required' 
       });
     }
-    
+
     const db = getDb();
-    
-    // Get current Pacific time for storage
     const pacificTime = getPacificTime();
-    
-    // Save order to database with Pacific timezone
+
+    // Save order to database
     db.run(
       `INSERT INTO orders (customer_name, customer_phone, customer_email, items, total, notes, status, created_at) 
        VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)`,
       [customerName, customerPhone, customerEmail || '', items, total, notes || '', pacificTime],
-      async function(err) {
+      function(err) {
         if (err) {
           console.error('Database error:', err);
           return res.status(500).json({ error: 'Failed to save order' });
         }
-        
+
         const orderId = this.lastID;
-        
-        console.log('');
-        console.log('📦 ════════════════════════════════════');
+
+        // Logging
+        console.log(`\n📦 ════════════════════════════════════`);
         console.log(`   NEW ORDER #${orderId}`);
         console.log('════════════════════════════════════');
         console.log(`   Customer: ${customerName}`);
@@ -89,34 +87,39 @@ router.post('/', async (req, res) => {
         console.log(`   Items: ${items}`);
         console.log(`   Total: $${parseFloat(total).toFixed(2)}`);
         console.log(`   Time: ${pacificTime}`);
-        console.log('════════════════════════════════════');
-        console.log('');
-        
-        // Send email notification
-        if (transporter) {
-          try {
-            await sendOrderEmail({
-              id: orderId,
-              customerName,
-              customerPhone,
-              customerEmail: customerEmail || 'Not provided',
-              items,
-              total,
-              notes
-            });
-            console.log('✅ Email notification sent to owner');
-          } catch (emailError) {
-            console.log('⚠️ Email failed (order still saved):', emailError.message);
-          }
-        }
-        
+        console.log('════════════════════════════════════\n');
+
+        // 1️⃣ RESPOND IMMEDIATELY
         res.json({
           success: true,
           message: 'Order placed successfully! We will contact you shortly.',
           orderId
         });
+
+        // 2️⃣ SEND EMAIL IN BACKGROUND (non-blocking)
+        if (transporter && (process.env.OWNER_EMAIL || process.env.EMAIL_USER)) {
+          setImmediate(async () => {
+            try {
+              await sendOrderEmail({
+                id: orderId,
+                customerName,
+                customerPhone,
+                customerEmail: customerEmail || 'Not provided',
+                items,
+                total,
+                notes
+              });
+              console.log('✅ Email notification sent to owner');
+            } catch (emailError) {
+              console.log('⚠️ Email failed (order still saved):', emailError.message);
+            }
+          });
+        } else {
+          console.log('⚠️ Email skipped: OWNER_EMAIL or EMAIL_USER not set');
+        }
       }
     );
+
   } catch (error) {
     console.error('Order Error:', error);
     res.status(500).json({ error: 'Failed to place order' });
@@ -131,18 +134,18 @@ router.post('/', async (req, res) => {
 router.get('/', authMiddleware, (req, res) => {
   const db = getDb();
   const { status, limit = 50 } = req.query;
-  
+
   let query = 'SELECT * FROM orders';
   let params = [];
-  
+
   if (status && status !== 'all') {
     query += ' WHERE status = ?';
     params.push(status);
   }
-  
+
   query += ' ORDER BY id DESC LIMIT ?';
   params.push(parseInt(limit));
-  
+
   db.all(query, params, (err, orders) => {
     if (err) {
       console.error('Database error:', err);
@@ -156,11 +159,10 @@ router.get('/', authMiddleware, (req, res) => {
 router.get('/stats', authMiddleware, (req, res) => {
   const db = getDb();
   const todayDate = getPacificDateString();
-  
-  // First get manual revenue adjustment
+
   db.get('SELECT value FROM site_content WHERE key = ?', ['manual_revenue'], (err, manualRow) => {
     const manualRevenue = manualRow ? parseFloat(manualRow.value) || 0 : 0;
-    
+
     db.get(`
       SELECT 
         COUNT(*) as total_orders,
@@ -177,7 +179,7 @@ router.get('/stats', authMiddleware, (req, res) => {
         console.error('Database error:', err);
         return res.status(500).json({ error: 'Database error' });
       }
-      
+
       const result = stats || {
         total_orders: 0,
         total_revenue: 0,
@@ -188,11 +190,10 @@ router.get('/stats', authMiddleware, (req, res) => {
         today_orders: 0,
         today_revenue: 0
       };
-      
-      // Add manual revenue to total
+
       result.total_revenue = (parseFloat(result.total_revenue) || 0) + manualRevenue;
       result.manual_revenue = manualRevenue;
-      
+
       res.json(result);
     });
   });
@@ -201,52 +202,42 @@ router.get('/stats', authMiddleware, (req, res) => {
 // POST /api/orders/adjust-revenue - Add/adjust manual revenue
 router.post('/adjust-revenue', authMiddleware, (req, res) => {
   const { amount, action } = req.body; // action: 'add', 'set', 'reset'
-  
+  const db = getDb();
+
   if (amount === undefined && action !== 'reset') {
     return res.status(400).json({ error: 'Amount is required' });
   }
-  
-  const db = getDb();
-  
+
   if (action === 'reset') {
-    // Reset manual revenue to 0
     db.run(
       `INSERT INTO site_content (key, value, updated_at) VALUES ('manual_revenue', '0', CURRENT_TIMESTAMP)
        ON CONFLICT(key) DO UPDATE SET value = '0', updated_at = CURRENT_TIMESTAMP`,
       function(err) {
-        if (err) {
-          return res.status(500).json({ error: 'Database error' });
-        }
+        if (err) return res.status(500).json({ error: 'Database error' });
         res.json({ success: true, manual_revenue: 0 });
       }
     );
   } else if (action === 'set') {
-    // Set manual revenue to specific amount
     db.run(
       `INSERT INTO site_content (key, value, updated_at) VALUES ('manual_revenue', ?, CURRENT_TIMESTAMP)
        ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP`,
       [amount.toString(), amount.toString()],
       function(err) {
-        if (err) {
-          return res.status(500).json({ error: 'Database error' });
-        }
+        if (err) return res.status(500).json({ error: 'Database error' });
         res.json({ success: true, manual_revenue: amount });
       }
     );
   } else {
-    // Add to existing manual revenue
     db.get('SELECT value FROM site_content WHERE key = ?', ['manual_revenue'], (err, row) => {
       const currentManual = row ? parseFloat(row.value) || 0 : 0;
       const newManual = currentManual + parseFloat(amount);
-      
+
       db.run(
         `INSERT INTO site_content (key, value, updated_at) VALUES ('manual_revenue', ?, CURRENT_TIMESTAMP)
          ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP`,
         [newManual.toString(), newManual.toString()],
         function(err) {
-          if (err) {
-            return res.status(500).json({ error: 'Database error' });
-          }
+          if (err) return res.status(500).json({ error: 'Database error' });
           res.json({ success: true, manual_revenue: newManual });
         }
       );
@@ -257,14 +248,10 @@ router.post('/adjust-revenue', authMiddleware, (req, res) => {
 // GET /api/orders/:id - Get single order
 router.get('/:id', authMiddleware, (req, res) => {
   const db = getDb();
-  
+
   db.get('SELECT * FROM orders WHERE id = ?', [req.params.id], (err, order) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (!order) {
-      return res.status(404).json({ error: 'Order not found' });
-    }
+    if (err) return res.status(500).json({ error: 'Database error' });
+    if (!order) return res.status(404).json({ error: 'Order not found' });
     res.json(order);
   });
 });
@@ -273,36 +260,20 @@ router.get('/:id', authMiddleware, (req, res) => {
 router.put('/:id', authMiddleware, (req, res) => {
   const { status, notes } = req.body;
   const { id } = req.params;
-  
   const db = getDb();
-  
+
   let updates = ['updated_at = ?'];
   let params = [getPacificTime()];
-  
-  if (status) {
-    updates.push('status = ?');
-    params.push(status);
-  }
-  
-  if (notes !== undefined) {
-    updates.push('notes = ?');
-    params.push(notes);
-  }
-  
+
+  if (status) { updates.push('status = ?'); params.push(status); }
+  if (notes !== undefined) { updates.push('notes = ?'); params.push(notes); }
+
   params.push(id);
-  
   const query = `UPDATE orders SET ${updates.join(', ')} WHERE id = ?`;
-  
+
   db.run(query, params, function(err) {
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    
-    if (this.changes === 0) {
-      return res.status(404).json({ error: 'Order not found' });
-    }
-    
+    if (err) return res.status(500).json({ error: 'Database error' });
+    if (this.changes === 0) return res.status(404).json({ error: 'Order not found' });
     console.log(`📝 Order #${id} updated to: ${status || 'no status change'}`);
     res.json({ success: true, id, status, notes });
   });
@@ -311,17 +282,10 @@ router.put('/:id', authMiddleware, (req, res) => {
 // DELETE /api/orders/:id - Delete order
 router.delete('/:id', authMiddleware, (req, res) => {
   const db = getDb();
-  
+
   db.run('DELETE FROM orders WHERE id = ?', [req.params.id], function(err) {
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    
-    if (this.changes === 0) {
-      return res.status(404).json({ error: 'Order not found' });
-    }
-    
+    if (err) return res.status(500).json({ error: 'Database error' });
+    if (this.changes === 0) return res.status(404).json({ error: 'Order not found' });
     console.log(`🗑️ Order #${req.params.id} deleted`);
     res.json({ success: true });
   });
@@ -332,13 +296,11 @@ router.delete('/:id', authMiddleware, (req, res) => {
 // ========================================
 
 async function sendOrderEmail(order) {
-  if (!transporter) {
-    throw new Error('Email not configured');
-  }
-  
+  if (!transporter) throw new Error('Email not configured');
+
   const ownerEmail = process.env.OWNER_EMAIL || process.env.EMAIL_USER;
   const pacificTime = getPacificTime();
-  
+
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -374,39 +336,19 @@ async function sendOrderEmail(order) {
         <div class="content">
           <div class="section">
             <div class="section-title">Customer Information</div>
-            <div class="info-row">
-              <span class="info-label">Name</span>
-              <span class="info-value">${order.customerName}</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Phone</span>
-              <span class="info-value">${order.customerPhone}</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Email</span>
-              <span class="info-value">${order.customerEmail}</span>
-            </div>
+            <div class="info-row"><span class="info-label">Name</span><span class="info-value">${order.customerName}</span></div>
+            <div class="info-row"><span class="info-label">Phone</span><span class="info-value">${order.customerPhone}</span></div>
+            <div class="info-row"><span class="info-label">Email</span><span class="info-value">${order.customerEmail}</span></div>
           </div>
-          
           <div class="section">
             <div class="section-title">Order Details</div>
-            <div class="info-row">
-              <span class="info-label">Items</span>
-              <span class="info-value">${order.items}</span>
-            </div>
-            ${order.notes ? `
-            <div class="notes">
-              <strong>📝 Customer Notes:</strong><br>
-              ${order.notes}
-            </div>
-            ` : ''}
+            <div class="info-row"><span class="info-label">Items</span><span class="info-value">${order.items}</span></div>
+            ${order.notes ? `<div class="notes"><strong>📝 Customer Notes:</strong><br>${order.notes}</div>` : ''}
           </div>
-          
           <div class="total-row">
             <span class="total-label">Total</span>
             <span class="total-value">$${parseFloat(order.total).toFixed(2)}</span>
           </div>
-          
           <a href="tel:${order.customerPhone.replace(/[^0-9]/g, '')}" class="cta">📞 Call Customer Now</a>
         </div>
         <div class="footer">
@@ -417,7 +359,7 @@ async function sendOrderEmail(order) {
     </body>
     </html>
   `;
-  
+
   const textContent = `
 🍞 NEW ORDER #${order.id}
 ═══════════════════════════
@@ -439,7 +381,7 @@ Fresh Hot Bread All Day
 Stockton, CA
 Time: ${pacificTime}
   `;
-  
+
   await transporter.sendMail({
     from: `"Fresh Hot Bread 🍞" <${process.env.EMAIL_USER}>`,
     to: ownerEmail,
