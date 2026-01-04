@@ -113,20 +113,35 @@ async function initializeDatabase() {
       // ========================================
       // DEFAULT ADMIN USER
       // ========================================
-      const adminPassword = process.env.ADMIN_PASSWORD || 'FreshBread2025!';
+      const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+      const adminPassword = process.env.ADMIN_PASSWORD || 'Blues@13';
       const hashedPassword = bcrypt.hashSync(adminPassword, 10);
-      
-      database.run(`
-        INSERT OR IGNORE INTO admin_users (username, password) 
-        VALUES (?, ?)
-      `, [process.env.ADMIN_USERNAME || 'admin', hashedPassword], function(err) {
-        if (!err && this.changes > 0) {
-          console.log('✅ Default admin user created');
+
+      database.get(`SELECT id FROM admin_users WHERE username = ?`, [adminUsername], (err, row) => {
+        if (err) return console.error(err);
+
+        if (row) {
+          // Admin exists → update password
+          database.run(
+            `UPDATE admin_users SET password = ? WHERE username = ?`,
+            [hashedPassword, adminUsername],
+            (err) => {
+              if (!err) console.log('🔁 Admin password updated from ENV');
+              resolve(database);
+            }
+          );
+        } else {
+          // Admin does not exist → insert
+          database.run(
+            `INSERT INTO admin_users (username, password) VALUES (?, ?)`,
+            [adminUsername, hashedPassword],
+            (err) => {
+              if (!err) console.log('✅ Default admin user created');
+              resolve(database);
+            }
+          );
         }
       });
-
-      console.log('✅ Database initialized successfully');
-      resolve(database);
     });
   });
 }
