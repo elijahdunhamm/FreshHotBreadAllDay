@@ -262,7 +262,12 @@
             <option value="4.5">5 pieces - $4.50</option>
           </select>
         </div>
-        
+        <div class="order-notice">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+  </svg>
+  <span>Large orders (50+ pieces) require 24-hour notice.</span>
+</div>
         <button class="add-to-cart" id="add-to-cart-btn">
           <span class="btn-text">Add to Order</span>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -500,17 +505,17 @@
         <h3>Phone</h3>
         <p><a href="tel:+12094207925">(209) 420-7925</a></p>
       </div>
-      
+
       <div class="contact-card fade-in">
-  <div class="contact-icon">
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-      <polyline points="22,6 12,13 2,6"/>
-    </svg>
-  </div>
-  <h3>Email</h3>
-  <p><a href="mailto:freshhotbread@gmail.com">freshhotbread@gmail.com</a></p>
-</div>
+        <div class="contact-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+        </div>
+        <h3>Email</h3>
+        <p><a href="mailto:freshhotbread@gmail.com">freshhotbread@gmail.com</a></p>
+      </div>
       
       <div class="contact-card fade-in">
         <div class="contact-icon">
@@ -534,6 +539,57 @@
         <p>Tues–Sun: 6AM–6PM<br>Mon: Closed</p>
       </div>
     </div>
+
+    <!-- Map & Directions - AFTER contact-grid -->
+    <div class="location-section fade-in">
+      <div class="location-grid">
+        <div class="map-container">
+          <iframe 
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3144.6815689347336!2d-121.33460659999999!3d37.984559999999995!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x80900d0009850a5b%3A0x97b6c03eb644a54!2sFresh%20Hot%20Bread%20All%20Day!5e0!3m2!1sen!2sus!4v1767559117130!5m2!1sen!2sus"
+            width="100%" 
+            height="100%" 
+            style="border:0;" 
+            allowfullscreen="" 
+            loading="lazy" 
+            referrerpolicy="no-referrer-when-downgrade">
+          </iframe>
+        </div>
+        
+        <div class="directions-card">
+          <h3>📍 How to Find Us</h3>
+          <p class="directions-address">2233 Grand Canal Blvd UNIT 102<br>Stockton, CA 95207</p>
+          
+          <div class="directions-landmarks">
+            <h4>Look for these landmarks:</h4>
+            <ul>
+              <li>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                Behind <strong>Marshalls</strong>
+              </li>
+              <li>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                Below <strong>Domino's Pizza</strong>
+              </li>
+            </ul>
+          </div>
+          
+          <a href="https://www.google.com/maps/dir/?api=1&destination=2233+Grand+Canal+Blvd+UNIT+102+Stockton+CA+95207" 
+             target="_blank" 
+             rel="noopener noreferrer" 
+             class="directions-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+            </svg>
+            Get Directions
+          </a>
+        </div>
+      </div>
+    </div>
+
   </div>
 </section>
 <!-- Photography Section -->
